@@ -1,20 +1,12 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
-// Initialize the Gemini SDK
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-/**
- * Analyzes an electronic device image and returns structured JSON.
- * @param {string} base64Image - The base64 encoded image string.
- * @returns {Promise<Object>} - The structured analysis result.
- */
 async function analyzeDeviceImage(base64Image) {
     try {
-        // 1. Clean the base64 string (remove data prefix if present)
         const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
-        // 2. Define the Prompt (enforcing strict JSON output)
         const prompt = `Analyze this electronic device. Return ONLY a raw JSON object (no markdown backticks, no explanatory text). 
         { 
           "deviceName": "string", 
@@ -25,10 +17,8 @@ async function analyzeDeviceImage(base64Image) {
           "route": "marketplace" 
         }`;
 
-        // 3. Use Flash model for speed (perfect for hackathons)
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // 4. Send the image to the model
         const result = await model.generateContent([
             prompt,
             {
@@ -39,16 +29,12 @@ async function analyzeDeviceImage(base64Image) {
             }
         ]);
 
-        // 5. Parse the output text
         const responseText = result.response.text();
-        
-        // Remove potential markdown formatting just in case
         const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-        
         return JSON.parse(jsonString);
+
     } catch (error) {
         console.error("AI Analysis Error:", error);
-        // Returning a fallback object so the application flow doesn't break during the demo
         return {
             deviceName: "Unknown Device",
             condition: "C",
@@ -60,4 +46,27 @@ async function analyzeDeviceImage(base64Image) {
     }
 }
 
-module.exports = { analyzeDeviceImage };
+// ✅ NEW — Phase 4: Chatbot function
+async function geminiChat(userMessage) {
+    try {
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            systemInstruction: `You are the ReCircle recycling assistant. 
+            You help users safely dispose of or sell their used electronics. 
+            Give short, friendly 2-sentence answers about:
+            - How to safely wipe data from phones/laptops
+            - How to recycle e-waste responsibly
+            - How to list devices on ReCircle
+            - General questions about second-hand electronics`
+        });
+
+        const result = await model.generateContent(userMessage);
+        return result.response.text();
+
+    } catch (error) {
+        console.error("Chat Error:", error);
+        return "Sorry, I couldn't process that. Please try asking again!";
+    }
+}
+
+module.exports = { analyzeDeviceImage, geminiChat };
