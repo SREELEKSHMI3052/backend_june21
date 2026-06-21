@@ -5,10 +5,14 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 require('dotenv').config();
 
 // Firebase init
-const serviceAccount = require('./firebase-service-account.json');
-initializeApp({ credential: cert(serviceAccount) });
+initializeApp({
+  credential: cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  }),
+});
 const db = getFirestore();
-
 // Gemini
 const { analyzeDeviceImage } = require('./services/gemini');
 
@@ -72,4 +76,16 @@ app.post('/api/upload', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const { geminiChat } = require('./services/gemini');
+
+// POST chat
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+    const reply = await geminiChat(message);
+    res.json({ reply });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

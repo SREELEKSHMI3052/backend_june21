@@ -59,5 +59,18 @@ async function analyzeDeviceImage(base64Image) {
         };
     }
 }
+async function geminiChat(userMessage) {
+  try {
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: "You are the ReCircle recycling assistant. Give short, 2-sentence answers about safely wiping data from phones or recycling e-waste."
+    });
 
-module.exports = { analyzeDeviceImage };
+    const result = await model.generateContent(userMessage);
+    return result.response.text();
+  } catch (error) {
+    console.error("Chat Error:", error);
+    return "Sorry, I couldn't process your question. Please try again.";
+  }
+}
+module.exports = { analyzeDeviceImage, geminiChat };
